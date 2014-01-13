@@ -8,14 +8,13 @@
         android:id="@+id/icon"
         android:layout_width="wrap_content"
         android:layout_height="fill_parent"
-        android:layout_alignParentBottom="true"
         android:layout_alignParentTop="true"
-        android:layout_marginRight="6dp"
+        android:layout_marginRight="0dp"
         android:contentDescription="Preview"
         android:src="@drawable/ic_launcher" />
 
     <TextView
-        android:id="@+id/secondLine"
+        android:id="@+id/videoItemLink"
         android:layout_width="fill_parent"
         android:layout_height="26dip"
         android:layout_alignParentBottom="true"
@@ -24,12 +23,13 @@
         android:ellipsize="marquee"
         android:singleLine="true"
         android:text="Video file link"
-        android:textSize="12sp" />
+        android:textSize="10sp" />
 
     <TextView
+        android:id="@+id/videoItemName"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:layout_above="@id/secondLine"
+        android:layout_above="@id/videoItemLink"
         android:layout_alignParentRight="true"
         android:layout_alignParentTop="true"
         android:layout_alignWithParentIfMissing="true"

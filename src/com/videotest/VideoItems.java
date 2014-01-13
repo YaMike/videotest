@@ -8,36 +8,26 @@ import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 
-import android.graphics.Bitmap;
-import android.media.ThumbnailUtils;
-import android.provider.MediaStore;
-
 public class VideoItems {
-	private ArrayList<String> ll = new ArrayList<String>();
-	private ArrayList<Bitmap> il = new ArrayList<Bitmap>();
+	private ArrayList<VideoItem> val = new ArrayList<VideoItem>();
 	
 	VideoItems(String url) {
 		Document doc;
 		try {			
+			System.out.println("Connecting: " + url);
 			doc = Jsoup.connect(url).get();
 			Elements links = doc.select("a[href]");
 			for (Element link: links) {
-				String fullLink = url + link.attr("href");
-				System.out.println("\nlink: " + fullLink);
-				ll.add(fullLink);
-				il.add(ThumbnailUtils.createVideoThumbnail(fullLink, 
-						MediaStore.Images.Thumbnails.MINI_KIND));
+				String fullLink = url + "/" + link.attr("href");
+				if (!fullLink.contains(".mp4")) continue;
+				val.add(new VideoItem(fullLink, link.attr("href")));
 			}
 		} catch(IOException e) {
 			e.printStackTrace();
 		}
 	}
 	
-	ArrayList<String> getLinks() {
-		return ll;
-	}
-	
-	ArrayList<Bitmap> getPreviewImages() {
-		return il;
+	ArrayList<VideoItem> getItems() {
+		return val;
 	}
 }

@@ -1,18 +1,35 @@
 package com.videotest;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
 import android.app.Activity;
 import android.app.ProgressDialog;
+import android.content.Context;
+import android.view.LayoutInflater;
 import android.view.Menu;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.BaseAdapter;
+import android.widget.ImageView;
+import android.widget.ListAdapter;
 import android.widget.ListView;
+import android.widget.TextView;
 
 
 public class MainActivity extends Activity {
-
-	private ListView mainListView = null;
-	private VideoItems videoItems = null;
+	
 	private final String url = "http://tangohacks.com/videofeed";
+	private ListView mainListView;
+	private ArrayList<VideoItem> videoItems = new ArrayList<VideoItem>();
+	private VideoItemsAdapter videoAdapter;
+	private ProgressDialog videoReadProgress;
+	
+	public Handler handler;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -20,35 +37,82 @@ public class MainActivity extends Activity {
 		setContentView(R.layout.activity_main);
 
 		mainListView = (ListView)findViewById(R.id.listview);
-		new VideoListLoader().execute(url);
+		videoAdapter = new VideoItemsAdapter(this, videoItems);
+		mainListView.setAdapter(videoAdapter);
+		videoReadProgress = ProgressDialog.show(MainActivity.this, 
+				"Please wait...", "Updating list of video...", true);
+		new Thread(new VideoListLoader()).start();
 	}
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
-		// Inflate the menu; this adds items to the action bar if it is present.
 		getMenuInflater().inflate(R.menu.main, menu);
 		return true;
 	}
 
-	class VideoListLoader extends AsyncTask<String, Void, VideoItems> {
-
-		private ProgressDialog videoReadProgress = null;
-
+	private class VideoListLoader implements Runnable {
 		@Override
-		protected VideoItems doInBackground(String... params) {
-			return new VideoItems(url);
+		public void run() {
+			final VideoItems result = new VideoItems(url);
+			final ArrayList<VideoItem> items = result.getItems(); 
+			videoAdapter.setNewItems(items);
+		}
+	}
+	
+	private class VideoItemsAdapter extends BaseAdapter implements ListAdapter {
+		private final Context context;
+		private ArrayList<VideoItem> items;
+		public final Handler handler = new Handler();
+
+		public VideoItemsAdapter(Context context, ArrayList<VideoItem> items) {
+			this.context = context;
+			this.items = items;
 		}
 
 		@Override
-		protected void onPostExecute(VideoItems result) {
-			videoReadProgress.dismiss();
-			videoReadProgress = null;
-			videoItems = result;
+		public View getView(int position, View convertView, ViewGroup parent) {
+			LayoutInflater inflater = (LayoutInflater) context
+					.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+			
+			View rowView = inflater.inflate(R.layout.video_item_layout, parent, false);
+			
+			TextView  nameText = (TextView)rowView.findViewById(R.id.videoItemName);
+			TextView  linkText = (TextView)rowView.findViewById(R.id.videoItemLink);
+			ImageView imView = (ImageView)rowView.findViewById(R.id.icon);
+			
+			VideoItem item = items.get(position);			
+			nameText.setText(item.getFileName());
+			linkText.setText(item.getLink());
+			imView.setImageBitmap(item.getPreview());
+			
+			return rowView;	
+		}
+
+		@Override
+		public int getCount() {
+			return items != null ? items.size() : 0;
+		}
+
+		@Override
+		public VideoItem getItem(int position) {
+			return items != null ? items.get(position) : null;
+		}
+
+		@Override
+		public long getItemId(int pos) {
+			return pos;
 		}
 		
-		@Override
-		protected void onPreExecute() {
-			videoReadProgress = ProgressDialog.show(MainActivity.this, "Please wait...", "Updating list of video...", true);
+		public void setNewItems(final ArrayList<VideoItem> newItems) {
+			handler.post(new Runnable() {
+				@Override
+				public void run() {
+					items = newItems;
+					notifyDataSetChanged();
+					videoReadProgress.dismiss();
+				}
+			});
 		}
+		
 	}
 }
