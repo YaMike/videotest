@@ -53,6 +53,7 @@ public class MainActivity extends Activity implements AdapterView.OnItemClickLis
 	public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 		VideoItem vi = (VideoItem)mainListView.getItemAtPosition(position);
 		Intent i = new Intent(this, ChildActivity.class);
+		i.putExtra("open", vi.getLink());
 		startActivityForResult(i, 1);
 	}
 
