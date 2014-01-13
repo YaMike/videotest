@@ -9,10 +9,13 @@ import android.os.Handler;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
@@ -21,7 +24,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 
-public class MainActivity extends Activity {
+public class MainActivity extends Activity implements AdapterView.OnItemClickListener {
 	
 	private final String url = "http://tangohacks.com/videofeed";
 	private ListView mainListView;
@@ -39,9 +42,18 @@ public class MainActivity extends Activity {
 		mainListView = (ListView)findViewById(R.id.listview);
 		videoAdapter = new VideoItemsAdapter(this, videoItems);
 		mainListView.setAdapter(videoAdapter);
+		mainListView.setClickable(true);
+		mainListView.setOnItemClickListener(this);
 		videoReadProgress = ProgressDialog.show(MainActivity.this, 
 				"Please wait...", "Updating list of video...", true);
 		new Thread(new VideoListLoader()).start();
+	}
+
+	@Override
+	public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+		VideoItem vi = (VideoItem)mainListView.getItemAtPosition(position);
+		Intent i = new Intent(this, ChildActivity.class);
+		startActivityForResult(i, 1);
 	}
 
 	@Override
