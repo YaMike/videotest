@@ -17,14 +17,14 @@ public class VideoItems {
 			System.out.println("Connecting: " + url);
 			doc = Jsoup.connect(url).get();
 			Elements links = doc.select("a[href]");
-			//FIXME: remove idx
+			//FIXME: remove idx and check in the loop when releasing
 			int idx = 0;
 			for (Element link: links) {
+				String fullLink = url + "/" + link.attr("href");
+				if (!fullLink.contains(".mp4")) continue;
 				if (++idx > 10) {
 					break;
 				}
-				String fullLink = url + "/" + link.attr("href");
-				if (!fullLink.contains(".mp4")) continue;
 				val.add(new VideoItem(fullLink, link.attr("href")));
 			}
 		} catch(IOException e) {

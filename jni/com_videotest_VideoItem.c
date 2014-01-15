@@ -18,7 +18,21 @@
 #define  LOG_I(...)  __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
 #define  LOG_E(...)  __android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__)
 
+
+JNIEXPORT jint JNICALL getLinkPreview
+(JNIEnv *env, jobject obj, jstring jstr, jint width, jint height, jobject jbitmap);
+
 JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *jvm, void *dummy) {
+    JNIEnv* env = NULL;
+    if ((*jvm)->GetEnv(jvm, (void **)&env, JNI_VERSION_1_6) != JNI_OK) {
+             return -1;
+    }
+    JNINativeMethod nm[1];
+    nm[0].name = "getLinkPreview";
+    nm[0].signature = "(Ljava/lang/String;IILandroid/graphics/Bitmap;)I";
+    nm[0].fnPtr = (void*)getLinkPreview;
+    jclass cls = (*env)->FindClass(env, "com/videotest/VideoItem");
+    (*env)->RegisterNatives(env, cls, nm, 1);
 	return JNI_VERSION_1_6;
 }
 
@@ -57,14 +71,16 @@ static int open_codec_context(int *stream_idx, const char *video_link_str,
 static void copy_frame_to_pixels(AVFrame *p_frame, void *pixels, AndroidBitmapInfo *info) {
     uint8_t *p_frame_line;
 
+    LOG_I("Starting copying (bitmap: w=%d, h=%d, stride=%d, format=%d)",
+    		info->width, info->height, info->stride, info->format);
+    LOG_I("Frame: w=%d h=%d data=%p\n", p_frame->width, p_frame->height, p_frame->data );
+
     for (int line = 0; line < info->height; line++) {
         uint8_t*  pxs = (uint8_t*)pixels;
         p_frame_line = (uint8_t *)p_frame->data[0] + (line*p_frame->linesize[0]);
-
         for (int offset = 0; offset < info->width; offset++) {
             int out_offset = offset * 4;
             int in_offset = offset * 3;
-
             pxs[out_offset]   = p_frame_line[in_offset];
             pxs[out_offset+1] = p_frame_line[in_offset+1];
             pxs[out_offset+2] = p_frame_line[in_offset+2];
@@ -89,14 +105,17 @@ static void println_av_error(char *msg, int err) {
 
 #undef ERR_FMT
 
-JNIEXPORT jint JNICALL Java_com_videotest_VideoItem_getLinkPreview
+JNIEXPORT jint JNICALL getLinkPreview
 (JNIEnv *env, jobject obj, jstring jstr, jint width, jint height, jobject jbitmap) {
 
 	AVFormatContext *p_format_ctx = NULL;
 	const char *video_link_str = (*env)->GetStringUTFChars(env, jstr, NULL);
 	int err = 0;
 
+	LOG_I("Read link: %s\n", video_link_str);
+
 	av_register_all();
+	avformat_network_init();
 
 	if (0 > (err = avformat_open_input(&p_format_ctx, video_link_str, NULL, NULL))) {
 		println_av_error("Error at opening input video file!", err);
@@ -144,16 +163,17 @@ JNIEXPORT jint JNICALL Java_com_videotest_VideoItem_getLinkPreview
 	av_init_packet(&pkt);
 	pkt.data = NULL;
 	pkt.size = 0;
-
 	int frame_number = 0;
-	while (0 < av_read_frame(p_format_ctx, &pkt)) {
+
+	while (0 == (err = av_read_frame(p_format_ctx, &pkt))) {
 		if (pkt.stream_index == video_stream_idx) {
 			int got_picture = 0;
 			if (0 > (err = avcodec_decode_video2(p_video_dec_ctx, p_frame,  &got_picture, &pkt))) {
 				println_av_error("Cannot decode frame!", err);
 				break;
 			}
-			if (got_picture) {
+			if (got_picture && (++frame_number > 20)) {
+
 				struct SwsContext *p_sws_context = sws_getContext(
 						p_video_dec_ctx->width,	p_video_dec_ctx->height,
 						p_video_dec_ctx->pix_fmt,
@@ -163,30 +183,35 @@ JNIEXPORT jint JNICALL Java_com_videotest_VideoItem_getLinkPreview
 					println_av_error("Cannot allocate context for image transformation!", 0);
 					break;
 				}
-				if (0 >= sws_scale(p_sws_context, (const uint8_t * const *) p_frame->data, p_frame->linesize, 0,
-						p_video_dec_ctx->height, p_transformed_frame->data, p_transformed_frame->linesize)) {
-					sws_freeContext(p_sws_context);
-					break;
-				}
 
 				AndroidBitmapInfo info;
 				void *pixels = NULL;
+
 				AndroidBitmap_getInfo(env, jbitmap, &info);
-				AndroidBitmap_lockPixels(env, jbitmap, pixels);
-				copy_frame_to_pixels(p_transformed_frame, pixels, &info);
-				AndroidBitmap_unlockPixels(env, jbitmap);
-				LOG_I("Picture created (frame %d)", frame_number);
-				sws_freeContext(p_sws_context);
-				if (++frame_number > 10) {
+				AndroidBitmap_lockPixels(env, jbitmap, &pixels);
+				avpicture_fill((AVPicture*)p_transformed_frame, pixels,
+						AV_PIX_FMT_RGBA, p_video_dec_ctx->width, p_video_dec_ctx->height);
+
+				if (0 > sws_scale(p_sws_context, (const uint8_t * const *) p_frame->data, p_frame->linesize, 0,
+						p_video_dec_ctx->height, p_transformed_frame->data, p_transformed_frame->linesize)) {
+					sws_freeContext(p_sws_context);
+					AndroidBitmap_unlockPixels(env, jbitmap);
+					LOG_I("sws_scale");
 					break;
 				}
+
+				copy_frame_to_pixels(p_transformed_frame, pixels, &info);
+				AndroidBitmap_unlockPixels(env, jbitmap);
+				sws_freeContext(p_sws_context);
+				break;
 			}
 		}
 		av_free_packet(&pkt);
 	}
 
-	LOG_I("Finished normally.");
 	err = 0;
+	avcodec_close(p_video_dec_ctx);
+
 exit_level_5:
 	avcodec_free_frame(&p_transformed_frame);
 
@@ -202,5 +227,5 @@ exit_level_2:
 exit_level_1:
 	(*env)->ReleaseStringUTFChars(env, jstr, video_link_str);
 
-	return 0;
+	return err;
 }
