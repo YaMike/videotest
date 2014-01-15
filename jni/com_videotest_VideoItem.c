@@ -84,7 +84,7 @@ static void println_av_error(char *msg, int err) {
 	memset(fmt, 0, fmt_size);
 	strncpy(fmt, msg, fmt_size);
 	strncat(fmt, ERR_FMT, fmt_size - strlen(fmt) - strlen(ERR_FMT) - 1);
-	LOG_E(fmt);
+	LOG_E("%s",fmt);
 }
 
 #undef ERR_FMT
@@ -145,6 +145,7 @@ JNIEXPORT jint JNICALL Java_com_videotest_VideoItem_getLinkPreview
 	pkt.data = NULL;
 	pkt.size = 0;
 
+	int frame_number = 0;
 	while (0 < av_read_frame(p_format_ctx, &pkt)) {
 		if (pkt.stream_index == video_stream_idx) {
 			int got_picture = 0;
@@ -174,13 +175,17 @@ JNIEXPORT jint JNICALL Java_com_videotest_VideoItem_getLinkPreview
 				AndroidBitmap_lockPixels(env, jbitmap, pixels);
 				copy_frame_to_pixels(p_transformed_frame, pixels, &info);
 				AndroidBitmap_unlockPixels(env, jbitmap);
+				LOG_I("Picture created (frame %d)", frame_number);
 				sws_freeContext(p_sws_context);
-				break;
+				if (++frame_number > 10) {
+					break;
+				}
 			}
 		}
 		av_free_packet(&pkt);
 	}
 
+	LOG_I("Finished normally.");
 	err = 0;
 exit_level_5:
 	avcodec_free_frame(&p_transformed_frame);

@@ -9,4 +9,4 @@ LOCAL_SHARED_LIBRARIES := libavformat libavcodec libswscale libavutil
 LOCAL_CFLAGS := -std=c99
 
 include $(BUILD_SHARED_LIBRARY)
-$(call import-module,ffmpeg-2.1.1/android/arm)
+$(call import-module,ffmpeg-2.1.2/android/arm)
