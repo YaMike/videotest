@@ -10,9 +10,9 @@ extern "C" {
 /*
  * Class:     com_videotest_VideoItem
  * Method:    getLinkPreview
- * Signature: (Ljava/lang/String;IILandroid/graphics/Bitmap;)Landroid/graphics/Bitmap;
+ * Signature: (Ljava/lang/String;IILandroid/graphics/Bitmap;)I
  */
-JNIEXPORT jobject JNICALL Java_com_videotest_VideoItem_getLinkPreview
+JNIEXPORT jint JNICALL Java_com_videotest_VideoItem_getLinkPreview
   (JNIEnv *, jobject, jstring, jint, jint, jobject);
 
 #ifdef __cplusplus

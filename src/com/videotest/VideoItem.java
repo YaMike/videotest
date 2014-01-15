@@ -8,8 +8,8 @@ import android.media.ThumbnailUtils;
 import android.provider.MediaStore;
 
 public class VideoItem {
-	private final int Height = 300;
-	private final int Width  = 300;
+	private final int Height = 100;
+	private final int Width  = 100;
 	
 	private Bitmap videoPreview;
 	private String videoLink;
@@ -37,5 +37,5 @@ public class VideoItem {
 		return videoPreview;
 	}
 	
-	public native Bitmap getLinkPreview(String link, int w, int h, Bitmap bitmap);
+	public native int getLinkPreview(String link, int w, int h, Bitmap bitmap);
 }

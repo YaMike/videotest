@@ -89,7 +89,7 @@ static void println_av_error(char *msg, int err) {
 
 #undef ERR_FMT
 
-JNIEXPORT jobject JNICALL Java_com_videotest_VideoItem_getLinkPreview
+JNIEXPORT jint JNICALL Java_com_videotest_VideoItem_getLinkPreview
 (JNIEnv *env, jobject obj, jstring jstr, jint width, jint height, jobject jbitmap) {
 
 	AVFormatContext *p_format_ctx = NULL;
@@ -181,6 +181,7 @@ JNIEXPORT jobject JNICALL Java_com_videotest_VideoItem_getLinkPreview
 		av_free_packet(&pkt);
 	}
 
+	err = 0;
 exit_level_5:
 	avcodec_free_frame(&p_transformed_frame);
 
