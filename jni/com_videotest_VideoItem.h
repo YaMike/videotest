@@ -13,7 +13,7 @@ extern "C" {
  * Signature: (Ljava/lang/String;)Landroid/graphics/Bitmap;
  */
 JNIEXPORT jobject JNICALL Java_com_videotest_VideoItem_getLinkPreview
-  (JNIEnv *, jobject, jstring);
+  (JNIEnv *, jobject, jstring, jint, jint, jobject);
 
 #ifdef __cplusplus
 }

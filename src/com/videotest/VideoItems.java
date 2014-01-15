@@ -17,7 +17,12 @@ public class VideoItems {
 			System.out.println("Connecting: " + url);
 			doc = Jsoup.connect(url).get();
 			Elements links = doc.select("a[href]");
+			//FIXME: remove idx
+			int idx = 0;
 			for (Element link: links) {
+				if (++idx > 10) {
+					break;
+				}
 				String fullLink = url + "/" + link.attr("href");
 				if (!fullLink.contains(".mp4")) continue;
 				val.add(new VideoItem(fullLink, link.attr("href")));

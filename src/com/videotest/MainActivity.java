@@ -128,4 +128,12 @@ public class MainActivity extends Activity implements AdapterView.OnItemClickLis
 		}
 		
 	}
+	
+	static {
+		System.loadLibrary("avcodec-55");
+		System.loadLibrary("avformat-55");
+		System.loadLibrary("avutil-52");
+		System.loadLibrary("com_videotest_VideoItem");
+		System.loadLibrary("swscale-2");
+	}
 }
